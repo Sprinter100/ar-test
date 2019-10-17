@@ -33,7 +33,10 @@ class App extends React.Component {
     this.scene;
     this.renderer;
     this.model;
-  }
+
+    this.sceneWidth = window.innerWiedth;
+    this.sceneHeight = window.innerHeeight;
+  };
 
   componentDidMount() {
     if (navigator.mediaDevices.getUserMedia) {
@@ -44,12 +47,17 @@ class App extends React.Component {
         if (this.videoRef.current) {
           this.videoRef.current.srcObject = stream;
         }
-
-        this.init3dScene();
       }).catch((error) => {
         console.log('navigator.MediaDevices.getUserMedia error: ', error.message, error.name);
       });
     }
+  }
+
+  onVideoLoaded = () => {
+    this.sceneWidth = this.videoRef.current.offsetWidth;
+    this.sceneHeight = this.videoRef.current.offsetHeight;
+
+    this.init3dScene();
   }
 
   init3dScene() {
@@ -81,7 +89,7 @@ class App extends React.Component {
   initScene() {
       this.container = this.canvasContainerRef.current;
 
-      this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 200);
+      this.camera = new THREE.PerspectiveCamera(50, this.sceneWidth / this.sceneHeight, 1, 200);
       this.camera.position.z = 10;
 
       this.scene = new THREE.Scene();
@@ -106,13 +114,13 @@ class App extends React.Component {
 
       this.renderer = new THREE.WebGLRenderer({ alpha: true });
       this.renderer.setPixelRatio(window.devicePixelRatio);
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.renderer.setSize(this.sceneWidth, this.sceneHeight);
       this.container.appendChild(this.renderer.domElement);
 
       window.addEventListener('resize', () => {
-          this.camera.aspect = window.innerWidth / window.innerHeight;
+          this.camera.aspect = this.sceneWidth / this.sceneHeight;
           this.camera.updateProjectionMatrix();
-          this.renderer.setSize(window.innerWidth, window.innerHeight);
+          this.renderer.setSize(this.sceneWidth, this.sceneHeight);
       }, false);
 
       document.addEventListener('fullscreenchange', () => {
@@ -141,17 +149,31 @@ class App extends React.Component {
   }
 
   onButtonClick = () => {
-    const canvas = this.renderer.domElement;
-    console.log(canvas.getContext('webgl'));
-    canvas.getContext('webgl').drawImage(this.videoRef.current, 0, 0, canvas.width, canvas.height)
+    // const
+    // const canvas = this.renderer.domElement;
+    // console.log(canvas.getContext('webgl'));
+    // canvas.getContext('webgl').drawImage(this.videoRef.current, 0, 0, canvas.width, canvas.height)
     // new THREE.TextureLoader().load( "textures/water.jpg" );
     // this.scene.background = new THREE.Color( 0xff0000 );
+
+
+
+    const canvas = document.createElement('canvas');
+    const video = this.videoRef.current;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const dataUrl = canvas.toDataURL();
+
+    this.scene.background = new THREE.TextureLoader().load(dataUrl);
   }
 
   render() {
     return (
       <div className="App">
-        <video ref={this.videoRef} style={{ width: '100%', height: '100%' }} playsInline autoPlay></video>
+        <video onLoadedData={this.onVideoLoaded} ref={this.videoRef} style={{ width: '100%', height: '100%' }} playsInline autoPlay></video>
         <button onClick={this.onButtonClick}>setBg</button>
         <div ref={this.canvasContainerRef} className="canvas-container" />
       </div>
